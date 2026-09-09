@@ -1,0 +1,51 @@
+import { useMemo, useState } from 'react'
+import './App.css'
+
+type Service = { id: number; category: string; name: string; description: string; duration: string; price: string; tag?: string }
+const services: Service[] = [
+  { id: 1, category: '시그니처', name: '카이아 리프팅', description: '탄력과 윤곽을 한 번에 정돈하는 집중 케어', duration: '50분', price: '320,000원', tag: 'BEST' },
+  { id: 2, category: '시그니처', name: '카이아 스킨부스터', description: '피부 본연의 빛을 깨우는 수분 광채 케어', duration: '40분', price: '180,000원', tag: 'NEW' },
+  { id: 3, category: '탄력 · 리프팅', name: '울쎄라 리프팅', description: '깊은 층부터 채워지는 자연스러운 리프팅', duration: '60분', price: '890,000원' },
+  { id: 4, category: '탄력 · 리프팅', name: '인모드 FX', description: '페이스라인 지방과 탄력을 동시에 케어', duration: '30분', price: '240,000원' },
+  { id: 5, category: '피부 · 안티에이징', name: '리쥬란 힐러', description: '지친 피부 컨디션을 되돌리는 피부 재생 케어', duration: '40분', price: '280,000원' },
+  { id: 6, category: '피부 · 안티에이징', name: '물광주사', description: '건조함 없이 오래가는 촉촉한 피부결', duration: '30분', price: '160,000원' },
+  { id: 7, category: '바디 · 제모', name: '바디 인모드', description: '매끈한 바디 라인을 위한 맞춤형 관리', duration: '45분', price: '280,000원' },
+  { id: 8, category: '바디 · 제모', name: '레이저 제모', description: '부위별 피부 상태를 고려한 편안한 제모', duration: '20분', price: '80,000원' },
+]
+const categories = ['전체', '시그니처', '탄력 · 리프팅', '피부 · 안티에이징', '바디 · 제모']
+const times = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30']
+
+function App() {
+  const [category, setCategory] = useState('전체')
+  const [cart, setCart] = useState<number[]>([1])
+  const [showCart, setShowCart] = useState(false)
+  const [showBooking, setShowBooking] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [selectedTime, setSelectedTime] = useState('')
+  const [form, setForm] = useState({ name: '', email: '', phone: '', note: '', privacy: false, doctor: '희망', sedation: '비희망' })
+  const visibleServices = useMemo(() => category === '전체' ? services : services.filter((service) => service.category === category), [category])
+  const selectedServices = services.filter((service) => cart.includes(service.id))
+  const total = selectedServices.reduce((sum, service) => sum + Number(service.price.replace(/[^0-9]/g, '')), 0)
+  const updateForm = (key: string, value: string | boolean) => setForm((current) => ({ ...current, [key]: value }))
+  const toggleCart = (id: number) => setCart((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const openBooking = () => { setShowCart(false); setShowBooking(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+
+  return (
+    <div className="site-shell">
+      <header className="topbar"><a className="brand" href="#top"><span className="brand-mark">K</span><span>KAIA <em>CLINIC</em></span></a><nav><a href="#about">카이아 소개</a><a href="#services">시술 안내</a><a href="#visit">오시는 길</a></nav><button className="cart-button" onClick={() => setShowCart(true)} aria-label="장바구니 열기">예약 리스트 <b>{cart.length}</b></button></header>
+      <main id="top">
+        {!showBooking ? <>
+          <section className="hero-section" id="about"><div className="hero-copy"><p className="eyebrow">A NEW STANDARD OF CARE</p><h1>피부의 시간에<br /><i>좋은 변화</i>를 더하다</h1><p className="hero-description">카이아의원은 피부 본연의 아름다움을 오래 지켜드리기 위해<br />섬세한 진단과 정직한 시술을 약속합니다.</p><a className="primary-button" href="#services">시술 둘러보기 <span>↗</span></a></div><div className="hero-image"><div className="image-note">KAIA<br /><small>DERMATOLOGY</small></div><div className="hero-caption"><span>01</span><span>YOUR SKIN, OUR CARE</span></div></div></section>
+          <section className="statement"><span className="section-number">01 / ABOUT KAIA</span><h2>매일 마주하는 나의 피부가<br /><span>가장 나다운 모습</span>이 되도록.</h2><p>과한 변화보다 나에게 꼭 맞는 아름다움.<br />카이아는 충분히 듣고, 정확하게 진단하고, 섬세하게 케어합니다.</p></section>
+          <section className="services-section" id="services"><div className="section-heading"><div><span className="section-number">02 / TREATMENTS</span><h2>오늘, 내 피부에<br /><i>필요한 케어</i></h2></div><p>시술을 선택해 나만의 예약 리스트를 만들어보세요.<br />상담 후 최종 시술과 금액을 안내드립니다.</p></div><div className="category-tabs">{categories.map((item) => <button className={category === item ? 'active' : ''} key={item} onClick={() => setCategory(item)}>{item}</button>)}</div><div className="service-grid">{visibleServices.map((service, index) => <article className="service-card" key={service.id}><div className={`service-art art-${(index % 4) + 1}`}><span>{service.tag || `0${service.id}`}</span></div><div className="service-info"><div><h3>{service.name}</h3><p>{service.description}</p></div><button className={`add-button ${cart.includes(service.id) ? 'selected' : ''}`} onClick={() => toggleCart(service.id)} aria-label={`${service.name} ${cart.includes(service.id) ? '삭제' : '추가'}`}>{cart.includes(service.id) ? '✓' : '+'}</button><div className="service-meta"><span>{service.duration}</span><strong>{service.price}</strong></div></div></article>)}</div></section>
+          <section className="booking-banner"><div><span className="section-number">03 / YOUR VISIT</span><h2>당신의 다음 계절을<br /><i>예약하세요.</i></h2></div><button className="light-button" onClick={openBooking}>예약 시작하기 <span>↗</span></button></section>
+          <section className="visit-section" id="visit"><div><span className="section-number">04 / FIND US</span><h2>카이아의원</h2><p>서울 강남구 도산대로 123, 4층<br />월–금 10:00–19:00 · 토 10:00–15:00</p></div><div className="map-placeholder"><span>KAIA CLINIC</span><small>도산공원에서 도보 3분</small></div></section>
+        </> : <section className="booking-page"><div className="booking-title"><span className="section-number">KAIA APPOINTMENT</span><h1>방문 예약</h1><p>편안한 상담을 위해 몇 가지 정보를 남겨주세요.</p></div>{submitted ? <div className="success-message"><span>✓</span><h2>예약 신청이 완료되었습니다.</h2><p>카이아의원에서 확인 후 입력하신 연락처로 안내드리겠습니다.</p><button className="primary-button" onClick={() => { setSubmitted(false); setShowBooking(false) }}>홈으로 돌아가기</button></div> : <form className="booking-layout" onSubmit={(event) => { event.preventDefault(); if (form.privacy && selectedTime && form.name && form.phone) setSubmitted(true) }}><div className="booking-form"><div className="form-section"><h2>01 <span>기본 동의</span></h2><label className="checkbox-row"><input type="checkbox" checked={form.privacy} onChange={(event) => updateForm('privacy', event.target.checked)} required /><span>개인정보처리방침에 동의합니다. <u>내용 보기</u></span></label></div><div className="form-section"><h2>02 <span>상담 선택</span></h2><div className="choice-grid"><label className={form.doctor === '희망' ? 'choice active' : 'choice'}><input type="radio" name="doctor" checked={form.doctor === '희망'} onChange={() => updateForm('doctor', '희망')} />원장 상담 희망</label><label className={form.doctor === '비희망' ? 'choice active' : 'choice'}><input type="radio" name="doctor" checked={form.doctor === '비희망'} onChange={() => updateForm('doctor', '비희망')} />원장 상담 비희망</label></div><div className="choice-grid"><label className={form.sedation === '희망' ? 'choice active' : 'choice'}><input type="radio" name="sedation" checked={form.sedation === '희망'} onChange={() => updateForm('sedation', '희망')} />수면 마취 희망</label><label className={form.sedation === '비희망' ? 'choice active' : 'choice'}><input type="radio" name="sedation" checked={form.sedation === '비희망'} onChange={() => updateForm('sedation', '비희망')} />수면 마취 비희망</label></div></div><div className="form-section"><h2>03 <span>방문 일정</span></h2><label className="input-label">희망 날짜<input type="date" required /></label><div className="time-grid">{times.map((time) => <button type="button" key={time} className={selectedTime === time ? 'time active' : 'time'} onClick={() => setSelectedTime(time)}>{time}</button>)}</div></div><div className="form-section"><h2>04 <span>예약자 정보</span></h2><div className="input-grid"><label className="input-label">이름<input required value={form.name} onChange={(event) => updateForm('name', event.target.value)} placeholder="이름을 입력해주세요" /></label><label className="input-label">연락처<input required value={form.phone} onChange={(event) => updateForm('phone', event.target.value)} placeholder="010-0000-0000" /></label></div><label className="input-label">이메일<input type="email" value={form.email} onChange={(event) => updateForm('email', event.target.value)} placeholder="example@email.com" /></label><label className="input-label">요청사항<textarea value={form.note} onChange={(event) => updateForm('note', event.target.value)} placeholder="상담 시 전달하고 싶은 내용을 적어주세요." /></label></div></div><aside className="booking-summary"><h2>예약 리스트 <span>{selectedServices.length}</span></h2>{selectedServices.length ? selectedServices.map((service) => <div className="summary-item" key={service.id}><span>{service.name}<small>{service.duration}</small></span><strong>{service.price}</strong></div>) : <p className="empty-summary">시술 안내에서 원하는 시술을<br />먼저 선택해주세요.</p>}<div className="summary-total"><span>예상 금액</span><strong>{total.toLocaleString()}원</strong></div><p className="payment-note">결제는 내원 후 진행됩니다.<br />상담 결과에 따라 금액이 달라질 수 있습니다.</p><button className="primary-button submit-button" type="submit">예약하기 <span>↗</span></button><button type="button" className="back-button" onClick={() => setShowBooking(false)}>시술 다시 선택하기</button></aside></form>}</section>}
+      </main>
+      <footer><a className="brand" href="#top"><span className="brand-mark">K</span><span>KAIA <em>CLINIC</em></span></a><p>© 2024 KAIA CLINIC. ALL RIGHTS RESERVED.</p><div><a href="#about">Instagram</a><a href="#about">Privacy</a></div></footer>
+      {showCart && <div className="drawer-backdrop" onClick={() => setShowCart(false)}><aside className="cart-drawer" onClick={(event) => event.stopPropagation()}><button className="close-button" onClick={() => setShowCart(false)}>×</button><span className="section-number">YOUR SELECTION</span><h2>예약 리스트</h2>{selectedServices.map((service) => <div className="drawer-item" key={service.id}><span>{service.name}<small>{service.duration}</small></span><button onClick={() => toggleCart(service.id)}>삭제</button><strong>{service.price}</strong></div>)}<div className="drawer-total"><span>총 예상 금액</span><strong>{total.toLocaleString()}원</strong></div><button className="primary-button drawer-cta" onClick={openBooking} disabled={!selectedServices.length}>예약 정보 입력하기 <span>↗</span></button></aside></div>}
+    </div>
+  )
+}
+
+export default App
