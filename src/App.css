@@ -23,3 +23,14 @@
 	.hero-copy h1 { font-size: 42px; letter-spacing: -2px; }
 	.hero-description br { display: none; }
 }
+
+.header-actions { display: flex; align-items: center; gap: 18px; }
+.language-switcher { display: flex; align-items: center; gap: 8px; }
+.language-switcher button { border: 0; padding: 0; background: transparent; color: var(--muted); font-size: 10px; white-space: nowrap; }
+.language-switcher button.active { color: var(--coral); font-weight: 700; }
+@media (max-width: 800px) {
+	.header-actions { gap: 10px; }
+	.language-switcher { gap: 5px; }
+	.language-switcher button { font-size: 9px; }
+	.cart-button { font-size: 10px; }
+}
