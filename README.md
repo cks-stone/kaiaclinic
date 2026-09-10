@@ -16,6 +16,8 @@
 - 결제는 내원 후 진행한다는 운영 안내
 - 반응형 모바일 레이아웃
 - 다국어 전환: 한국어, 번체 중국어, 영어, 일본어
+- Supabase 기반 비회원 예약 요청 저장
+- Supabase Auth 기반 관리자 예약 대시보드 및 Realtime 업데이트
 
 ## Run
 
@@ -92,4 +94,4 @@ kaiaclinic/
 5. 실사용 이미지와 지도/주소 교체
 6. HTTPS, 개인정보 암호화, 접근 권한과 보관 기간 정책 확정
 
-현재 예약 신청은 UI 프로토타입이며 서버에는 저장하지 않습니다.
+Supabase 예약 저장 설정은 [docs/SUPABASE-SETUP.md](docs/SUPABASE-SETUP.md)를 참고하세요. 환경변수와 SQL을 설정하면 비회원 예약 요청이 `appointments` 테이블에 저장됩니다.
