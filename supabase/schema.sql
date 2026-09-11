@@ -263,6 +263,47 @@ create policy "admins can update appointments"
   using (exists (select 1 from public.admin_users where user_id = auth.uid()))
   with check (exists (select 1 from public.admin_users where user_id = auth.uid()));
 
+-- Event popups shown on site entry (images uploaded to the service-images bucket with a popup- prefix)
+create table if not exists public.popups (
+  id uuid primary key default gen_random_uuid(),
+  title text not null default '',
+  image text not null,
+  link text,
+  active boolean not null default true,
+  sort integer not null default 0,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.popups enable row level security;
+
+drop policy if exists "anyone can view popups" on public.popups;
+create policy "anyone can view popups"
+  on public.popups for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "admins can insert popups" on public.popups;
+create policy "admins can insert popups"
+  on public.popups for insert
+  to authenticated
+  with check (exists (select 1 from public.admin_users where user_id = auth.uid()));
+
+drop policy if exists "admins can update popups" on public.popups;
+create policy "admins can update popups"
+  on public.popups for update
+  to authenticated
+  using (exists (select 1 from public.admin_users where user_id = auth.uid()))
+  with check (exists (select 1 from public.admin_users where user_id = auth.uid()));
+
+drop policy if exists "admins can delete popups" on public.popups;
+create policy "admins can delete popups"
+  on public.popups for delete
+  to authenticated
+  using (exists (select 1 from public.admin_users where user_id = auth.uid()));
+
+grant select on public.popups to anon, authenticated;
+grant insert, update, delete on public.popups to authenticated;
+
 do $$
 begin
   alter publication supabase_realtime add table public.appointments;
