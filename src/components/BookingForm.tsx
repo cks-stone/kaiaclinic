@@ -1,67 +1,25 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { CalendarPicker } from './CalendarPicker'
 
-type BookingFormProps = {
-  text: Record<string, string>
-  locale: 'ko' | 'zh-TW' | 'en' | 'ja'
-  selected: Array<{ id: number; name: Record<string, string>; duration: number; price: number }>
-  total: number
-  money: Intl.NumberFormat
-  duration: (value: number) => string
-  onHome: () => void
-}
+type BookingFormProps = { text: Record<string, string>; locale: 'ko' | 'zh-TW' | 'en' | 'ja'; selected: Array<{ id: number; name: Record<string, string>; duration: number; price: number }>; total: number; money: Intl.NumberFormat; duration: (value: number) => string; onHome: () => void; onBack: () => void; onRemove: (id: number) => void }
+type Country = { code: string; name: string; label: string }
+const times = Array.from({ length: 21 }, (_, index) => { const minutes = index * 30; return `${String(9 + Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}` })
+const kstNow = () => { const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()); const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''; const hour = get('hour') === '24' ? '00' : get('hour'); return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${hour}:${get('minute')}` } }
+const { date: todayKst, time: nowKst } = kstNow()
+const countries: Country[] = [
+  { code: '+82', name: '대한민국', label: '+82 대한민국' }, { code: '+886', name: '台灣', label: '+886 台灣' }, { code: '+81', name: '日本', label: '+81 日本' }, { code: '+1', name: 'United States', label: '+1 United States' }, { code: '+86', name: '中国', label: '+86 中国' },
+]
+const snsOptions = [{ id: 'kakao', labels: { ko: '카카오톡', 'zh-TW': 'KakaoTalk', en: 'KakaoTalk', ja: 'カカオトーク' } }, { id: 'instagram', labels: { ko: '인스타그램', 'zh-TW': 'Instagram', en: 'Instagram', ja: 'Instagram' } }, { id: 'line', labels: { ko: 'LINE', 'zh-TW': 'LINE', en: 'LINE', ja: 'LINE' } }, { id: 'whatsapp', labels: { ko: 'WhatsApp', 'zh-TW': 'WhatsApp', en: 'WhatsApp', ja: 'WhatsApp' } }, { id: '기타', labels: { ko: '직접입력', 'zh-TW': '其他', en: 'Other', ja: 'その他' } }]
 
-const times = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30']
-
-export function BookingForm({ text, locale, selected, total, money, duration, onHome }: BookingFormProps) {
-  const [date, setDate] = useState('')
-  const [time, setTime] = useState('')
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [note, setNote] = useState('')
-  const [privacy, setPrivacy] = useState(false)
-  const [doctor, setDoctor] = useState<'yes' | 'no'>('yes')
-  const [sedation, setSedation] = useState<'yes' | 'no'>('no')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [complete, setComplete] = useState(false)
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-    if (!isSupabaseConfigured || !supabase) {
-      setError('예약 시스템이 아직 연결되지 않았습니다. 관리자에게 문의해주세요.')
-      return
-    }
-    setSubmitting(true)
-    const { error: insertError } = await supabase.from('appointments').insert({
-      service_ids: selected.map((item) => item.id),
-      service_names: selected.map((item) => ({ id: item.id, name: item.name[locale], duration: item.duration, price: item.price })),
-      estimated_total: total,
-      appointment_date: date,
-      appointment_time: time,
-      doctor_consultation: doctor,
-      sedation,
-      name,
-      email: email || null,
-      phone,
-      note: note || null,
-      locale,
-      privacy_agreed: privacy,
-      payment_status: 'PAY_ON_VISIT',
-      status: 'REQUESTED',
-    })
-    setSubmitting(false)
-    if (insertError) {
-      setError('예약 저장 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.')
-      return
-    }
-    setComplete(true)
-  }
-
+export function BookingForm({ text, locale, selected, total, money, duration, onHome, onBack, onRemove }: BookingFormProps) {
+  const [date, setDate] = useState(''); const [time, setTime] = useState(''); const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [countryCode, setCountryCode] = useState('+82'); const [phone, setPhone] = useState(''); const [snsPlatform, setSnsPlatform] = useState('kakao'); const [snsAccount, setSnsAccount] = useState(''); const [note, setNote] = useState(''); const [privacy, setPrivacy] = useState(false); const [doctor, setDoctor] = useState<'yes' | 'no'>('yes'); const [sedation, setSedation] = useState<'yes' | 'no'>('no'); const [submitting, setSubmitting] = useState(false); const [error, setError] = useState(''); const [complete, setComplete] = useState(false)
+  const label = locale === 'ko' ? { phone: '연락처', phoneHelp: '숫자만 입력해주세요. 예: 01012345678', country: '국가번호', sns: 'SNS 계정', snsHelp: '빠른 예약 확정을 위해 SNS 또는 연락처를 입력해주세요.' } : locale === 'zh-TW' ? { phone: '聯絡電話', phoneHelp: '請只輸入數字，例如 0912345678', country: '國家碼', sns: 'SNS 帳號', snsHelp: '為方便確認預約，請輸入 SNS 或聯絡電話。' } : locale === 'ja' ? { phone: '電話番号', phoneHelp: '数字のみ入力してください。例: 09012345678', country: '国番号', sns: 'SNSアカウント', snsHelp: '予約確認のため、SNSまたは電話番号をご入力ください。' } : { phone: 'Phone', phoneHelp: 'Numbers only, e.g. 01012345678', country: 'Country code', sns: 'SNS account', snsHelp: 'Please provide an SNS account or phone number for confirmation.' }
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setError(''); if (!date) { setError(text.dateRequired); return } if (!time) { setError(text.timeRequired); return } if (!isSupabaseConfigured || !supabase) { setError('예약 시스템이 아직 연결되지 않았습니다. 관리자에게 문의해주세요.'); return } if (!phone && !snsAccount) { setError(label.snsHelp); return } setSubmitting(true); const { error: insertError } = await supabase.from('appointments').insert({ service_ids: selected.map((item) => item.id), service_names: selected.map((item) => ({ id: item.id, name: item.name[locale], duration: item.duration, price: item.price })), estimated_total: total, appointment_date: date, appointment_time: time, doctor_consultation: doctor, sedation, name, email: email || null, country_code: countryCode, phone: phone ? phone.replace(/\D/g, '') : null, sns_platform: snsPlatform, sns_account: snsAccount || null, note: note || null, locale, privacy_agreed: privacy, payment_status: 'PAY_ON_VISIT', status: 'REQUESTED' }); setSubmitting(false); if (insertError) { setError(`예약 저장 중 문제가 발생했습니다: ${insertError.message}`); return } setComplete(true) }
+  const onDateChange = (day: string) => { const current = kstNow(); if (day === current.date && time && time <= current.time) setTime(''); setDate(day) }
+  const isTimeDisabled = (slot: string) => date === todayKst && slot <= nowKst
+  const timeClass = (slot: string) => time === slot && !isTimeDisabled(slot) ? 'time active' : 'time'
   if (complete) return <section className="booking-page"><div className="success-message"><span>✓</span><h2>{text.success}</h2><p>{text.successText}</p><button className="primary-button" onClick={onHome}>{text.homeButton}</button></div></section>
-
-  return <section className="booking-page"><div className="booking-title"><span className="section-number">KAIA APPOINTMENT</span><h1>{text.book}</h1><p>{text.bookText}</p></div><form className="booking-layout" onSubmit={handleSubmit}><div className="booking-form"><div className="form-section"><h2>01 <span>{text.agree}</span></h2><label className="checkbox-row"><input type="checkbox" required checked={privacy} onChange={(event) => setPrivacy(event.target.checked)} />{text.agree}</label></div><div className="form-section"><h2>02 <span>{text.consult}</span></h2><div className="choice-grid"><label className={doctor === 'yes' ? 'choice active' : 'choice'}><input type="radio" name="doctor" checked={doctor === 'yes'} onChange={() => setDoctor('yes')} />{text.doctorYes}</label><label className={doctor === 'no' ? 'choice active' : 'choice'}><input type="radio" name="doctor" checked={doctor === 'no'} onChange={() => setDoctor('no')} />{text.doctorNo}</label></div><div className="choice-grid"><label className={sedation === 'yes' ? 'choice active' : 'choice'}><input type="radio" name="sedation" checked={sedation === 'yes'} onChange={() => setSedation('yes')} />{text.sleepYes}</label><label className={sedation === 'no' ? 'choice active' : 'choice'}><input type="radio" name="sedation" checked={sedation === 'no'} onChange={() => setSedation('no')} />{text.sleepNo}</label></div></div><div className="form-section"><h2>03 <span>{text.schedule}</span></h2><label className="input-label">{text.date}<input type="date" required value={date} onChange={(event) => setDate(event.target.value)} /></label><div className="time-grid">{times.map((item) => <button type="button" className={time === item ? 'time active' : 'time'} onClick={() => setTime(item)} key={item}>{item}</button>)}</div></div><div className="form-section"><h2>04 <span>{text.customer}</span></h2><div className="input-grid"><label className="input-label">{text.name}<input required value={name} onChange={(event) => setName(event.target.value)} /></label><label className="input-label">{text.phone}<input required value={phone} onChange={(event) => setPhone(event.target.value)} /></label></div><label className="input-label">{text.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="input-label">{text.note}<textarea value={note} onChange={(event) => setNote(event.target.value)} /></label></div></div><aside className="booking-summary"><h2>{text.summary} <span>{selected.length}</span></h2>{selected.map((item) => <div className="summary-item" key={item.id}><span>{item.name[locale]}<small>{duration(item.duration)}</small></span><strong>{money.format(item.price)}</strong></div>)}<div className="summary-total"><span>{text.estimate}</span><strong>{money.format(total)}</strong></div><p className="payment-note">{text.payment}</p>{error && <p className="booking-error" role="alert">{error}</p>}<button className="primary-button submit-button" type="submit" disabled={submitting || !time}>{submitting ? '...' : text.submit} <span>↗</span></button><button type="button" className="back-button" onClick={onHome}>{text.back}</button></aside></form></section>
+  return <section className="booking-page"><div className="booking-title"><span className="section-number">KAIA APPOINTMENT</span><h1>{text.book}</h1><p>{text.bookText}</p></div><form className="booking-layout" onSubmit={handleSubmit}><div className="booking-form"><div className="form-section"><h2>01 <span>{text.agree}</span></h2><label className="checkbox-row"><input type="checkbox" required checked={privacy} onChange={(event) => setPrivacy(event.target.checked)} />{text.agree}</label></div><div className="form-section"><h2>02 <span>{text.consult}</span></h2><div className="choice-grid"><label className={doctor === 'yes' ? 'choice active' : 'choice'}><input type="radio" name="doctor" checked={doctor === 'yes'} onChange={() => setDoctor('yes')} />{text.doctorYes}</label><label className={doctor === 'no' ? 'choice active' : 'choice'}><input type="radio" name="doctor" checked={doctor === 'no'} onChange={() => setDoctor('no')} />{text.doctorNo}</label></div><div className="choice-grid"><label className={sedation === 'yes' ? 'choice active' : 'choice'}><input type="radio" name="sedation" checked={sedation === 'yes'} onChange={() => setSedation('yes')} />{text.sleepYes}</label><label className={sedation === 'no' ? 'choice active' : 'choice'}><input type="radio" name="sedation" checked={sedation === 'no'} onChange={() => setSedation('no')} />{text.sleepNo}</label></div></div><div className="form-section"><h2>03 <span>{text.schedule}</span></h2><div className="input-label">{text.date}<CalendarPicker value={date} onChange={onDateChange} /></div><div className="time-grid">{times.map((item) => <button type="button" className={timeClass(item)} disabled={isTimeDisabled(item)} onClick={() => setTime(item)} key={item}>{item}</button>)}</div></div><div className="form-section"><h2>04 <span>{text.customer}</span></h2><div className="input-grid"><label className="input-label">{text.name}<input required value={name} onChange={(event) => setName(event.target.value)} /></label><label className="input-label">{text.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label></div><label className="input-label">{label.sns}<div className="sns-row"><select value={snsPlatform} onChange={(event) => setSnsPlatform(event.target.value)}>{snsOptions.map((item) => <option key={item.id} value={item.id}>{item.labels[locale]}</option>)}</select><input value={snsAccount} onChange={(event) => setSnsAccount(event.target.value)} /></div></label><p className="field-help">{label.snsHelp}</p><label className="input-label">{label.phone}<div className="phone-row"><select aria-label={label.country} value={countryCode} onChange={(event) => setCountryCode(event.target.value)}>{countries.map((country) => <option key={country.code} value={country.code}>{country.label}</option>)}</select><input required={!snsAccount} inputMode="numeric" pattern="[0-9]+" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, ''))} placeholder="01012345678" /></div></label><p className="field-help">{label.phoneHelp}</p><label className="input-label">{text.note}<textarea value={note} onChange={(event) => setNote(event.target.value)} /></label></div></div><aside className="booking-summary"><h2>{text.summary} <span>{selected.length}</span></h2>{selected.map((item) => <div className="summary-item" key={item.id}><span>{item.name[locale]}<small>{duration(item.duration)}</small></span><button type="button" className="drawer-remove" onClick={() => onRemove(item.id)}>{text.remove}</button><strong>{money.format(item.price)}</strong></div>)}<div className="summary-total"><span>{text.estimate}</span><strong>{money.format(total)}</strong></div><p className="payment-note">{text.payment}</p>{error && <p className="booking-error" role="alert">{error}</p>}<button className="primary-button submit-button" type="submit" disabled={submitting || !time}>{submitting ? '...' : text.submit} <span>↗</span></button><button type="button" className="back-button" onClick={onBack}>{text.back}</button></aside></form></section>
 }
